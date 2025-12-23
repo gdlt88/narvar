@@ -1,72 +1,216 @@
-'use strict';
+'use strict'
 
 /**
  * Promise Delivery Date Helper
- * 
+ *
  * This module contains the business logic for calculating estimated delivery dates.
- * 
+ *
  * Calculation Logic:
  * Promise Date = Ship Date + Transit Days (business days only)
- * 
+ *
  * - Ship Date: Today if before 2 PM EST cutoff, else next business day
  * - Transit Days: Based on origin→destination ZIP range
  * - Business Days: Excludes weekends and US federal holidays
  */
 
-var Calendar = require('dw/util/Calendar');
-var Site = require('dw/system/Site');
+var Calendar = require('dw/util/Calendar')
 
 // Configuration constants
 var CONFIG = {
     CUTOFF_HOUR_EST: 14, // 2 PM EST cutoff
     ORIGIN_ZIP: '10001', // NYC origin
     EST_OFFSET: -5 // EST timezone offset
-};
+}
 
-// US Federal Holidays (2024-2025)
-var HOLIDAYS = [
-    '2024-01-01', // New Year's Day
-    '2024-01-15', // MLK Day
-    '2024-02-19', // Presidents Day
-    '2024-05-27', // Memorial Day
-    '2024-07-04', // Independence Day
-    '2024-09-02', // Labor Day
-    '2024-10-14', // Columbus Day
-    '2024-11-11', // Veterans Day
-    '2024-11-28', // Thanksgiving
-    '2024-12-25', // Christmas
-    '2025-01-01', // New Year's Day
-    '2025-01-20', // MLK Day
-    '2025-02-17', // Presidents Day
-    '2025-05-26', // Memorial Day
-    '2025-07-04', // Independence Day
-    '2025-09-01', // Labor Day
-    '2025-10-13', // Columbus Day
-    '2025-11-11', // Veterans Day
-    '2025-11-27', // Thanksgiving
-    '2025-12-25'  // Christmas
-];
+// ============================================================================
+// DYNAMIC HOLIDAY CALCULATION
+// ============================================================================
+
+// Cache for calculated holidays (keyed by year)
+var holidayCache = {}
 
 /**
- * Format a Calendar date as YYYY-MM-DD string
+ * Get the Nth occurrence of a weekday in a given month
+ * @param {number} year - The year
+ * @param {number} month - The month (0-11)
+ * @param {number} dayOfWeek - Day of week (1=Sunday, 2=Monday, etc. in Calendar)
+ * @param {number} occurrence - Which occurrence (1=first, 2=second, etc.)
+ * @returns {dw.util.Calendar} Calendar object for the Nth weekday
+ */
+function getNthWeekdayOfMonth(year, month, dayOfWeek, occurrence) {
+    var cal = new Calendar()
+    cal.set(Calendar.YEAR, year)
+    cal.set(Calendar.MONTH, month)
+    cal.set(Calendar.DAY_OF_MONTH, 1)
+
+    var firstDayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
+
+    // Calculate days until the first occurrence of the target weekday
+    var daysUntilFirst = dayOfWeek - firstDayOfWeek
+    if (daysUntilFirst < 0) {
+        daysUntilFirst += 7
+    }
+
+    // Calculate the date of the Nth occurrence
+    var date = 1 + daysUntilFirst + (occurrence - 1) * 7
+    cal.set(Calendar.DAY_OF_MONTH, date)
+    return cal
+}
+
+/**
+ * Get the last occurrence of a weekday in a given month
+ * @param {number} year - The year
+ * @param {number} month - The month (0-11)
+ * @param {number} dayOfWeek - Day of week (1=Sunday, 2=Monday, etc. in Calendar)
+ * @returns {dw.util.Calendar} Calendar object for the last weekday
+ */
+function getLastWeekdayOfMonth(year, month, dayOfWeek) {
+    // Get the last day of the month
+    var cal = new Calendar()
+    cal.set(Calendar.YEAR, year)
+    cal.set(Calendar.MONTH, month + 1)
+    cal.set(Calendar.DAY_OF_MONTH, 0) // Last day of previous month
+
+    var lastDayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
+
+    // Calculate days to go back to reach the target weekday
+    var daysToSubtract = lastDayOfWeek - dayOfWeek
+    if (daysToSubtract < 0) {
+        daysToSubtract += 7
+    }
+
+    cal.add(Calendar.DAY_OF_MONTH, -daysToSubtract)
+    return cal
+}
+
+/**
+ * Get observed date for a holiday (handles weekend observance)
+ * If holiday falls on Saturday, observed on Friday
+ * If holiday falls on Sunday, observed on Monday
+ * @param {dw.util.Calendar} cal - The actual holiday calendar
+ * @returns {dw.util.Calendar} The observed date calendar
+ */
+function getObservedDate(cal) {
+    var dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
+    if (dayOfWeek === Calendar.SATURDAY) {
+        // Saturday -> observe on Friday
+        cal.add(Calendar.DAY_OF_MONTH, -1)
+    } else if (dayOfWeek === Calendar.SUNDAY) {
+        // Sunday -> observe on Monday
+        cal.add(Calendar.DAY_OF_MONTH, 1)
+    }
+    return cal
+}
+
+/**
+ * Format a Calendar date as YYYY-MM-DD string (internal use)
  * @param {dw.util.Calendar} calendar - Calendar object
  * @returns {string} Date string in YYYY-MM-DD format
  */
-function formatDateString(calendar) {
-    var year = calendar.get(Calendar.YEAR);
-    var month = String(calendar.get(Calendar.MONTH) + 1).padStart(2, '0');
-    var day = String(calendar.get(Calendar.DAY_OF_MONTH)).padStart(2, '0');
-    return year + '-' + month + '-' + day;
+function formatDateStringInternal(calendar) {
+    var year = calendar.get(Calendar.YEAR)
+    var month = String(calendar.get(Calendar.MONTH) + 1).padStart(2, '0')
+    var day = String(calendar.get(Calendar.DAY_OF_MONTH)).padStart(2, '0')
+    return year + '-' + month + '-' + day
+}
+
+/**
+ * Calculate all US federal holidays for a given year
+ * @param {number} year - The year to calculate holidays for
+ * @returns {Array} Array of holiday dates in YYYY-MM-DD format
+ */
+function calculateHolidaysForYear(year) {
+    var holidays = []
+
+    // New Year's Day - January 1 (observed)
+    var newYears = new Calendar()
+    newYears.set(Calendar.YEAR, year)
+    newYears.set(Calendar.MONTH, 0)
+    newYears.set(Calendar.DAY_OF_MONTH, 1)
+    holidays.push(formatDateStringInternal(getObservedDate(newYears)))
+
+    // Martin Luther King Jr. Day - 3rd Monday of January
+    // Calendar.MONDAY = 2
+    var mlkDay = getNthWeekdayOfMonth(year, 0, Calendar.MONDAY, 3)
+    holidays.push(formatDateStringInternal(mlkDay))
+
+    // Presidents Day - 3rd Monday of February
+    var presidentsDay = getNthWeekdayOfMonth(year, 1, Calendar.MONDAY, 3)
+    holidays.push(formatDateStringInternal(presidentsDay))
+
+    // Memorial Day - Last Monday of May
+    var memorialDay = getLastWeekdayOfMonth(year, 4, Calendar.MONDAY)
+    holidays.push(formatDateStringInternal(memorialDay))
+
+    // Independence Day - July 4 (observed)
+    var independenceDay = new Calendar()
+    independenceDay.set(Calendar.YEAR, year)
+    independenceDay.set(Calendar.MONTH, 6)
+    independenceDay.set(Calendar.DAY_OF_MONTH, 4)
+    holidays.push(formatDateStringInternal(getObservedDate(independenceDay)))
+
+    // Labor Day - 1st Monday of September
+    var laborDay = getNthWeekdayOfMonth(year, 8, Calendar.MONDAY, 1)
+    holidays.push(formatDateStringInternal(laborDay))
+
+    // Columbus Day - 2nd Monday of October
+    var columbusDay = getNthWeekdayOfMonth(year, 9, Calendar.MONDAY, 2)
+    holidays.push(formatDateStringInternal(columbusDay))
+
+    // Veterans Day - November 11 (observed)
+    var veteransDay = new Calendar()
+    veteransDay.set(Calendar.YEAR, year)
+    veteransDay.set(Calendar.MONTH, 10)
+    veteransDay.set(Calendar.DAY_OF_MONTH, 11)
+    holidays.push(formatDateStringInternal(getObservedDate(veteransDay)))
+
+    // Thanksgiving - 4th Thursday of November
+    // Calendar.THURSDAY = 5
+    var thanksgiving = getNthWeekdayOfMonth(year, 10, Calendar.THURSDAY, 4)
+    holidays.push(formatDateStringInternal(thanksgiving))
+
+    // Christmas Day - December 25 (observed)
+    var christmas = new Calendar()
+    christmas.set(Calendar.YEAR, year)
+    christmas.set(Calendar.MONTH, 11)
+    christmas.set(Calendar.DAY_OF_MONTH, 25)
+    holidays.push(formatDateStringInternal(getObservedDate(christmas)))
+
+    return holidays
+}
+
+/**
+ * Get holidays for a specific year (with caching)
+ * @param {number} year - The year
+ * @returns {Array} Array of holiday dates
+ */
+function getHolidaysForYear(year) {
+    if (!holidayCache[year]) {
+        holidayCache[year] = calculateHolidaysForYear(year)
+    }
+    return holidayCache[year]
+}
+
+/**
+ * Check if a date is a US federal holiday (dynamically calculated)
+ * @param {dw.util.Calendar} calendar - Calendar object to check
+ * @returns {boolean} True if the date is a holiday
+ */
+function isHolidayDynamic(calendar) {
+    var year = calendar.get(Calendar.YEAR)
+    var dateStr = formatDateStringInternal(calendar)
+    var holidays = getHolidaysForYear(year)
+    return holidays.indexOf(dateStr) !== -1
 }
 
 /**
  * Check if a date is a US federal holiday
+ * Uses dynamic calculation - no need to maintain static holiday lists
  * @param {dw.util.Calendar} calendar - Calendar object to check
  * @returns {boolean} True if the date is a holiday
  */
 function isHoliday(calendar) {
-    var dateStr = formatDateString(calendar);
-    return HOLIDAYS.indexOf(dateStr) !== -1;
+    return isHolidayDynamic(calendar)
 }
 
 /**
@@ -75,13 +219,13 @@ function isHoliday(calendar) {
  * @returns {boolean} True if the date is a business day
  */
 function isBusinessDay(calendar) {
-    var dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+    var dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
     // Check if weekend (1 = Sunday, 7 = Saturday in dw.util.Calendar)
     if (dayOfWeek === Calendar.SUNDAY || dayOfWeek === Calendar.SATURDAY) {
-        return false;
+        return false
     }
     // Check if holiday
-    return !isHoliday(calendar);
+    return !isHoliday(calendar)
 }
 
 /**
@@ -90,12 +234,12 @@ function isBusinessDay(calendar) {
  * @returns {dw.util.Calendar} Calendar object for next business day
  */
 function getNextBusinessDay(calendar) {
-    var nextDay = new Calendar(calendar.getTime());
-    nextDay.add(Calendar.DAY_OF_MONTH, 1);
+    var nextDay = new Calendar(calendar.getTime())
+    nextDay.add(Calendar.DAY_OF_MONTH, 1)
     while (!isBusinessDay(nextDay)) {
-        nextDay.add(Calendar.DAY_OF_MONTH, 1);
+        nextDay.add(Calendar.DAY_OF_MONTH, 1)
     }
-    return nextDay;
+    return nextDay
 }
 
 /**
@@ -105,23 +249,23 @@ function getNextBusinessDay(calendar) {
  * @returns {dw.util.Calendar} Calendar object for the resulting date
  */
 function addBusinessDays(startDate, businessDays) {
-    var currentDate = new Calendar(startDate.getTime());
-    var daysAdded = 0;
+    var currentDate = new Calendar(startDate.getTime())
+    var daysAdded = 0
 
     while (daysAdded < businessDays) {
-        currentDate.add(Calendar.DAY_OF_MONTH, 1);
+        currentDate.add(Calendar.DAY_OF_MONTH, 1)
         if (isBusinessDay(currentDate)) {
-            daysAdded++;
+            daysAdded++
         }
     }
 
-    return currentDate;
+    return currentDate
 }
 
 /**
  * Get transit days based on destination ZIP range
  * Origin: 10001 (NYC)
- * 
+ *
  * | Destination ZIP | Transit Days |
  * |-----------------|--------------|
  * | 00000-19999     | 1            |
@@ -129,24 +273,24 @@ function addBusinessDays(startDate, businessDays) {
  * | 40000-59999     | 3            |
  * | 60000-79999     | 4            |
  * | 80000-99999     | 5            |
- * 
+ *
  * @param {string} destinationZip - Destination ZIP code
  * @returns {number} Number of transit days
  */
 function getTransitDays(destinationZip) {
-    var zipNum = parseInt(destinationZip, 10);
+    var zipNum = parseInt(destinationZip, 10)
 
     if (isNaN(zipNum)) {
-        return 5; // Default to 5 days for invalid ZIPs
+        return 5 // Default to 5 days for invalid ZIPs
     }
 
-    if (zipNum >= 0 && zipNum <= 19999) return 1;
-    if (zipNum >= 20000 && zipNum <= 39999) return 2;
-    if (zipNum >= 40000 && zipNum <= 59999) return 3;
-    if (zipNum >= 60000 && zipNum <= 79999) return 4;
-    if (zipNum >= 80000 && zipNum <= 99999) return 5;
+    if (zipNum >= 0 && zipNum <= 19999) return 1
+    if (zipNum >= 20000 && zipNum <= 39999) return 2
+    if (zipNum >= 40000 && zipNum <= 59999) return 3
+    if (zipNum >= 60000 && zipNum <= 79999) return 4
+    if (zipNum >= 80000 && zipNum <= 99999) return 5
 
-    return 5; // Default to 5 days for unknown ZIPs
+    return 5 // Default to 5 days for unknown ZIPs
 }
 
 /**
@@ -156,19 +300,19 @@ function getTransitDays(destinationZip) {
  * @returns {number} Number of transit days
  */
 function getTransitDaysForShippingMethod(shippingMethodId, destinationZip) {
-    var baseTransitDays = getTransitDays(destinationZip);
-    
+    var baseTransitDays = getTransitDays(destinationZip)
+
     // Adjust transit days based on shipping method
     switch (shippingMethodId) {
         case 'overnight':
         case 'express-overnight':
-            return 1; // Overnight shipping
+            return 1 // Overnight shipping
         case 'express':
         case '2-day':
-            return Math.min(2, baseTransitDays); // Express - max 2 days
+            return Math.min(2, baseTransitDays) // Express - max 2 days
         case 'standard':
         default:
-            return baseTransitDays; // Standard shipping uses base transit days
+            return baseTransitDays // Standard shipping uses base transit days
     }
 }
 
@@ -177,59 +321,69 @@ function getTransitDaysForShippingMethod(shippingMethodId, destinationZip) {
  * @returns {dw.util.Calendar} Calendar object for ship date
  */
 function getShipDate() {
-    var now = new Calendar();
-    
     // Get current hour in EST
     // Note: In production, use Site timezone configuration
-    var estCalendar = new Calendar();
-    estCalendar.setTimeZone('America/New_York');
-    var estHour = estCalendar.get(Calendar.HOUR_OF_DAY);
+    var estCalendar = new Calendar()
+    estCalendar.setTimeZone('America/New_York')
+    var estHour = estCalendar.get(Calendar.HOUR_OF_DAY)
 
     // Create today's date
-    var today = new Calendar();
-    today.set(Calendar.HOUR_OF_DAY, 0);
-    today.set(Calendar.MINUTE, 0);
-    today.set(Calendar.SECOND, 0);
-    today.set(Calendar.MILLISECOND, 0);
+    var today = new Calendar()
+    today.set(Calendar.HOUR_OF_DAY, 0)
+    today.set(Calendar.MINUTE, 0)
+    today.set(Calendar.SECOND, 0)
+    today.set(Calendar.MILLISECOND, 0)
 
     // If before 2 PM EST and today is a business day, ship today
     if (estHour < CONFIG.CUTOFF_HOUR_EST && isBusinessDay(today)) {
-        return today;
+        return today
     }
 
     // Otherwise, ship next business day
-    return getNextBusinessDay(today);
+    return getNextBusinessDay(today)
 }
 
 /**
  * Calculate the promise delivery date
  * Promise Date = Ship Date + Transit Days (business days only)
- * 
+ *
  * @param {string} destinationZip - Destination ZIP code
  * @param {string} [shippingMethodId] - Optional shipping method ID
  * @returns {Object} Object containing deliveryDate and formatted string
  */
 function calculateDeliveryDate(destinationZip, shippingMethodId) {
-    var shipDate = getShipDate();
-    var transitDays = shippingMethodId 
+    var shipDate = getShipDate()
+    var transitDays = shippingMethodId
         ? getTransitDaysForShippingMethod(shippingMethodId, destinationZip)
-        : getTransitDays(destinationZip);
-    var deliveryDate = addBusinessDays(shipDate, transitDays);
+        : getTransitDays(destinationZip)
+    var deliveryDate = addBusinessDays(shipDate, transitDays)
 
     // Format the date for display
-    var months = ['January', 'February', 'March', 'April', 'May', 'June',
-                  'July', 'August', 'September', 'October', 'November', 'December'];
-    var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    
-    var dayOfWeek = days[deliveryDate.get(Calendar.DAY_OF_WEEK) - 1];
-    var month = months[deliveryDate.get(Calendar.MONTH)];
-    var dayOfMonth = deliveryDate.get(Calendar.DAY_OF_MONTH);
-    
+    var months = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
+    ]
+    var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+    var dayOfWeek = days[deliveryDate.get(Calendar.DAY_OF_WEEK) - 1]
+    var month = months[deliveryDate.get(Calendar.MONTH)]
+    var dayOfMonth = deliveryDate.get(Calendar.DAY_OF_MONTH)
+
     // Add ordinal suffix
-    var suffix = 'th';
-    if (dayOfMonth === 1 || dayOfMonth === 21 || dayOfMonth === 31) suffix = 'st';
-    else if (dayOfMonth === 2 || dayOfMonth === 22) suffix = 'nd';
-    else if (dayOfMonth === 3 || dayOfMonth === 23) suffix = 'rd';
+    var suffix = 'th'
+    if (dayOfMonth === 1 || dayOfMonth === 21 || dayOfMonth === 31) suffix = 'st'
+    else if (dayOfMonth === 2 || dayOfMonth === 22) suffix = 'nd'
+    else if (dayOfMonth === 3 || dayOfMonth === 23) suffix = 'rd'
 
     return {
         deliveryDate: deliveryDate,
@@ -238,7 +392,7 @@ function calculateDeliveryDate(destinationZip, shippingMethodId) {
         formattedDate: month + ' ' + dayOfMonth + suffix,
         formattedDateFull: dayOfWeek + ', ' + month + ' ' + dayOfMonth + suffix,
         displayMessage: 'Get it by ' + month + ' ' + dayOfMonth + suffix
-    };
+    }
 }
 
 /**
@@ -248,10 +402,10 @@ function calculateDeliveryDate(destinationZip, shippingMethodId) {
  */
 function isValidZipCode(zipCode) {
     if (!zipCode || typeof zipCode !== 'string') {
-        return false;
+        return false
     }
-    var cleaned = zipCode.replace(/\D/g, '');
-    return cleaned.length === 5;
+    var cleaned = zipCode.replace(/\D/g, '')
+    return cleaned.length === 5
 }
 
 /**
@@ -261,13 +415,13 @@ function isValidZipCode(zipCode) {
  */
 function getDeliveryEstimatesForAllMethods(destinationZip) {
     var shippingMethods = [
-        { id: 'standard', name: 'Standard Shipping', price: 5.99 },
-        { id: 'express', name: 'Express Shipping', price: 12.99 },
-        { id: 'overnight', name: 'Overnight', price: 24.99 }
-    ];
+        {id: 'standard', name: 'Standard Shipping', price: 5.99},
+        {id: 'express', name: 'Express Shipping', price: 12.99},
+        {id: 'overnight', name: 'Overnight', price: 24.99}
+    ]
 
-    return shippingMethods.map(function(method) {
-        var estimate = calculateDeliveryDate(destinationZip, method.id);
+    return shippingMethods.map(function (method) {
+        var estimate = calculateDeliveryDate(destinationZip, method.id)
         return {
             shippingMethodId: method.id,
             shippingMethodName: method.name,
@@ -275,8 +429,8 @@ function getDeliveryEstimatesForAllMethods(destinationZip) {
             transitDays: estimate.transitDays,
             deliveryDate: estimate.formattedDate,
             displayMessage: estimate.displayMessage
-        };
-    });
+        }
+    })
 }
 
 module.exports = {
@@ -289,5 +443,4 @@ module.exports = {
     getDeliveryEstimatesForAllMethods: getDeliveryEstimatesForAllMethods,
     addBusinessDays: addBusinessDays,
     CONFIG: CONFIG
-};
-
+}
