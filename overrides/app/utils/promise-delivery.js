@@ -22,29 +22,160 @@ export const CONFIG = {
     EST_OFFSET: -5 // EST timezone offset
 }
 
-// US Federal Holidays (2024-2025)
-export const HOLIDAYS = [
-    '2024-01-01', // New Year's Day
-    '2024-01-15', // MLK Day
-    '2024-02-19', // Presidents Day
-    '2024-05-27', // Memorial Day
-    '2024-07-04', // Independence Day
-    '2024-09-02', // Labor Day
-    '2024-10-14', // Columbus Day
-    '2024-11-11', // Veterans Day
-    '2024-11-28', // Thanksgiving
-    '2024-12-25', // Christmas
-    '2025-01-01', // New Year's Day
-    '2025-01-20', // MLK Day
-    '2025-02-17', // Presidents Day
-    '2025-05-26', // Memorial Day
-    '2025-07-04', // Independence Day
-    '2025-09-01', // Labor Day
-    '2025-10-13', // Columbus Day
-    '2025-11-11', // Veterans Day
-    '2025-11-27', // Thanksgiving
-    '2025-12-25' // Christmas
-]
+// ============================================================================
+// DYNAMIC HOLIDAY CALCULATION
+// ============================================================================
+
+/**
+ * Get the Nth occurrence of a weekday in a given month
+ * @param {number} year - The year
+ * @param {number} month - The month (0-11)
+ * @param {number} dayOfWeek - Day of week (0=Sunday, 1=Monday, etc.)
+ * @param {number} occurrence - Which occurrence (1=first, 2=second, etc.)
+ * @returns {Date} The date of the Nth weekday
+ */
+const getNthWeekdayOfMonth = (year, month, dayOfWeek, occurrence) => {
+    const firstDay = new Date(year, month, 1)
+    const firstDayOfWeek = firstDay.getDay()
+
+    // Calculate days until the first occurrence of the target weekday
+    let daysUntilFirst = dayOfWeek - firstDayOfWeek
+    if (daysUntilFirst < 0) {
+        daysUntilFirst += 7
+    }
+
+    // Calculate the date of the Nth occurrence
+    const date = 1 + daysUntilFirst + (occurrence - 1) * 7
+    return new Date(year, month, date)
+}
+
+/**
+ * Get the last occurrence of a weekday in a given month
+ * @param {number} year - The year
+ * @param {number} month - The month (0-11)
+ * @param {number} dayOfWeek - Day of week (0=Sunday, 1=Monday, etc.)
+ * @returns {Date} The date of the last weekday
+ */
+const getLastWeekdayOfMonth = (year, month, dayOfWeek) => {
+    // Start from the last day of the month
+    const lastDay = new Date(year, month + 1, 0)
+    const lastDayOfWeek = lastDay.getDay()
+
+    // Calculate days to go back to reach the target weekday
+    let daysToSubtract = lastDayOfWeek - dayOfWeek
+    if (daysToSubtract < 0) {
+        daysToSubtract += 7
+    }
+
+    return new Date(year, month + 1, -daysToSubtract)
+}
+
+/**
+ * Get observed date for a holiday (handles weekend observance)
+ * If holiday falls on Saturday, observed on Friday
+ * If holiday falls on Sunday, observed on Monday
+ * @param {Date} date - The actual holiday date
+ * @returns {Date} The observed date
+ */
+const getObservedDate = (date) => {
+    const dayOfWeek = date.getDay()
+    if (dayOfWeek === 6) {
+        // Saturday -> observe on Friday
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1)
+    } else if (dayOfWeek === 0) {
+        // Sunday -> observe on Monday
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)
+    }
+    return date
+}
+
+/**
+ * Calculate all US federal holidays for a given year
+ * @param {number} year - The year to calculate holidays for
+ * @returns {string[]} Array of holiday dates in YYYY-MM-DD format
+ */
+const calculateHolidaysForYear = (year) => {
+    const holidays = []
+
+    // New Year's Day - January 1 (observed)
+    const newYears = getObservedDate(new Date(year, 0, 1))
+    holidays.push(formatDateStringInternal(newYears))
+
+    // Martin Luther King Jr. Day - 3rd Monday of January
+    const mlkDay = getNthWeekdayOfMonth(year, 0, 1, 3)
+    holidays.push(formatDateStringInternal(mlkDay))
+
+    // Presidents Day - 3rd Monday of February
+    const presidentsDay = getNthWeekdayOfMonth(year, 1, 1, 3)
+    holidays.push(formatDateStringInternal(presidentsDay))
+
+    // Memorial Day - Last Monday of May
+    const memorialDay = getLastWeekdayOfMonth(year, 4, 1)
+    holidays.push(formatDateStringInternal(memorialDay))
+
+    // Independence Day - July 4 (observed)
+    const independenceDay = getObservedDate(new Date(year, 6, 4))
+    holidays.push(formatDateStringInternal(independenceDay))
+
+    // Labor Day - 1st Monday of September
+    const laborDay = getNthWeekdayOfMonth(year, 8, 1, 1)
+    holidays.push(formatDateStringInternal(laborDay))
+
+    // Columbus Day - 2nd Monday of October
+    const columbusDay = getNthWeekdayOfMonth(year, 9, 1, 2)
+    holidays.push(formatDateStringInternal(columbusDay))
+
+    // Veterans Day - November 11 (observed)
+    const veteransDay = getObservedDate(new Date(year, 10, 11))
+    holidays.push(formatDateStringInternal(veteransDay))
+
+    // Thanksgiving - 4th Thursday of November
+    const thanksgiving = getNthWeekdayOfMonth(year, 10, 4, 4)
+    holidays.push(formatDateStringInternal(thanksgiving))
+
+    // Christmas Day - December 25 (observed)
+    const christmas = getObservedDate(new Date(year, 11, 25))
+    holidays.push(formatDateStringInternal(christmas))
+
+    return holidays
+}
+
+/**
+ * Internal format function (used before main formatDateString is defined)
+ */
+const formatDateStringInternal = (date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
+// Cache for calculated holidays (keyed by year)
+const holidayCache = new Map()
+
+/**
+ * Get holidays for a specific year (with caching)
+ * @param {number} year - The year
+ * @returns {string[]} Array of holiday dates
+ */
+export const getHolidaysForYear = (year) => {
+    if (!holidayCache.has(year)) {
+        holidayCache.set(year, calculateHolidaysForYear(year))
+    }
+    return holidayCache.get(year)
+}
+
+/**
+ * Check if a date is a US federal holiday (dynamically calculated)
+ * @param {Date} date - Date object to check
+ * @returns {boolean} True if the date is a holiday
+ */
+export const isHolidayDynamic = (date) => {
+    const year = date.getFullYear()
+    const dateStr = formatDateStringInternal(date)
+    const holidays = getHolidaysForYear(year)
+    return holidays.includes(dateStr)
+}
 
 /**
  * Format a Date object as YYYY-MM-DD string
@@ -60,12 +191,12 @@ export const formatDateString = (date) => {
 
 /**
  * Check if a date is a US federal holiday
+ * Uses dynamic calculation - no need to maintain static holiday lists
  * @param {Date} date - Date object to check
  * @returns {boolean} True if the date is a holiday
  */
 export const isHoliday = (date) => {
-    const dateStr = formatDateString(date)
-    return HOLIDAYS.includes(dateStr)
+    return isHolidayDynamic(date)
 }
 
 /**
@@ -178,13 +309,21 @@ export const getTransitDaysForShippingMethod = (shippingMethodId, destinationZip
 export const getShipDate = () => {
     const now = new Date()
 
-    // Convert to EST
-    const estOffset = CONFIG.EST_OFFSET
-    const utc = now.getTime() + now.getTimezoneOffset() * 60000
-    const estTime = new Date(utc + 3600000 * estOffset)
-    const estHour = estTime.getHours()
+    // Get current hour in EST/EDT using Intl API for proper timezone handling
+    let estHour
+    try {
+        const estTimeStr = now.toLocaleString('en-US', {
+            timeZone: 'America/New_York',
+            hour: 'numeric',
+            hour12: false
+        })
+        estHour = parseInt(estTimeStr, 10)
+    } catch (e) {
+        // Fallback: assume local time if timezone API fails
+        estHour = now.getHours()
+    }
 
-    // Create today's date (midnight)
+    // Create today's date (midnight in local timezone)
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
     // If before 2 PM EST and today is a business day, ship today
@@ -210,6 +349,18 @@ export const calculateDeliveryDate = (destinationZip, shippingMethodId = null) =
         ? getTransitDaysForShippingMethod(shippingMethodId, destinationZip)
         : getTransitDays(destinationZip)
     const deliveryDate = addBusinessDays(shipDate, transitDays)
+
+    // Debug logging - log on both client and server
+    console.log('[Promise Delivery] Debug:', {
+        destinationZip,
+        shippingMethodId,
+        shipDate: shipDate ? shipDate.toString() : 'null',
+        transitDays,
+        deliveryDate: deliveryDate ? deliveryDate.toString() : 'null',
+        deliveryMonth: deliveryDate ? deliveryDate.getMonth() : 'null',
+        deliveryDay: deliveryDate ? deliveryDate.getDate() : 'null',
+        deliveryYear: deliveryDate ? deliveryDate.getFullYear() : 'null'
+    })
 
     // Format the date for display
     const months = [
@@ -297,5 +448,5 @@ export default {
     getDeliveryEstimatesForAllMethods,
     addBusinessDays,
     CONFIG,
-    HOLIDAYS
+    getHolidaysForYear
 }
