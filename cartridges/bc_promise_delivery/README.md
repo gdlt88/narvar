@@ -1,6 +1,6 @@
-# int_promise_delivery - Promise Delivery Date Cartridge
+# bc_promise_delivery - Promise Delivery Date Cartridge
 
-A Salesforce Commerce Cloud (SFCC) cartridge that provides delivery date estimation functionality for storefronts.
+A Salesforce Commerce Cloud (SFCC) business component cartridge that provides delivery date estimation functionality for storefronts.
 
 ## Overview
 
@@ -9,12 +9,16 @@ This cartridge calculates estimated delivery dates based on:
 - **Transit Days**: Based on destination ZIP code range from origin (NYC - 10001)
 - **Business Days**: Excludes weekends and US federal holidays
 
+## Naming Convention
+
+The `bc_` prefix indicates this is a **Business Component** cartridge - a reusable module designed to be shared across multiple storefronts and projects.
+
 ## Folder Structure
 
 ```
-int_promise_delivery/
+bc_promise_delivery/
 ├── cartridge/
-│   └── int_promise_delivery.properties   # Cartridge properties
+│   └── bc_promise_delivery.properties    # Cartridge properties
 ├── controllers/
 │   └── PromiseDelivery.js                # SFRA controller endpoints
 ├── helpers/
@@ -27,10 +31,10 @@ int_promise_delivery/
 
 ### SFRA Installation
 
-1. Copy the `int_promise_delivery` folder to your `cartridges` directory
-2. Add `int_promise_delivery` to your cartridge path in Business Manager:
+1. Copy the `bc_promise_delivery` folder to your `cartridges` directory
+2. Add `bc_promise_delivery` to your cartridge path in Business Manager:
    - Go to **Administration > Sites > Manage Sites > [Your Site] > Settings**
-   - Add `int_promise_delivery` to the cartridge path (before `app_storefront_base`)
+   - Add `bc_promise_delivery` to the cartridge path (before `app_storefront_base`)
 
 ### PWA-Kit Installation
 
@@ -184,3 +188,4 @@ Test with different ZIP codes to verify transit time calculations:
 ## License
 
 BSD-3-Clause
+

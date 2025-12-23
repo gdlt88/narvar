@@ -22,7 +22,7 @@
 ┌─────────────────────────────────────▼───────────────────────────────┐
 │                       BUSINESS LOGIC LAYER                          │
 ├─────────────────────────────────────────────────────────────────────┤
-│  int_promise_delivery Cartridge                                     │
+│  bc_promise_delivery Cartridge                                      │
 │  ┌─────────────────────────────────────────────────────────────┐    │
 │  │ promiseDeliveryHelper.js                                     │    │
 │  │ ┌─────────────────┐  ┌─────────────────┐  ┌───────────────┐ │    │
@@ -41,9 +41,9 @@
 
 ```
 cartridges/
-└── int_promise_delivery/           # Main cartridge folder
+└── bc_promise_delivery/            # Main cartridge folder
     ├── cartridge/                  # SFCC required folder
-    │   └── int_promise_delivery.properties
+    │   └── bc_promise_delivery.properties
     ├── controllers/                # SFRA controllers
     │   └── PromiseDelivery.js
     ├── helpers/                    # Business logic helpers
@@ -51,6 +51,20 @@ cartridges/
     ├── README.md                   # Usage documentation
     └── DESIGN.md                   # This file
 ```
+
+## Naming Convention
+
+The cartridge follows SFCC naming conventions:
+
+| Prefix | Purpose | Example |
+|--------|---------|---------|
+| `app_` | Application-specific custom functionality | `app_storefront_custom` |
+| `int_` | Third-party integrations | `int_paypal` |
+| `plugin_` | Optional feature plugins | `plugin_wishlists` |
+| `bm_` | Business Manager extensions | `bm_custom_reports` |
+| `bc_` | **Business Components** (reusable modules) | `bc_promise_delivery` |
+
+We chose `bc_` because this cartridge provides **reusable business logic** that can be shared across multiple storefronts.
 
 ## Design Decisions
 
@@ -245,3 +259,4 @@ This implementation provides a foundation for delivery date estimation that can 
 4. International shipping support
 
 The key design principle is **separation of concerns** - business logic is isolated in reusable modules that can be consumed by different presentation layers (SFRA, PWA-Kit, mobile apps).
+
