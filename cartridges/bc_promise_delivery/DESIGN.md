@@ -70,11 +70,11 @@ We chose `bc_` because this cartridge provides **reusable business logic** that 
 
 ### 1. Dual Implementation (Cartridge + PWA-Kit Utility)
 
-**Decision**: Implement the same logic in both SFRA cartridge and PWA-Kit utility module.
+**Decision**: Implement the same logic in both SFRA cartridge and PWA-Kit utility module as per the challenge request.
 
-**Rationale**:
+**Main Comments**:
 - **SFRA Compatibility**: The cartridge follows SFCC best practices and can be used with traditional SFRA storefronts
-- **PWA-Kit Performance**: Client-side calculation in PWA-Kit provides instant feedback without API round-trips
+- **PWA-Kit Performance**: Client-side calculation in PWA-Kit provides instant feedback without API round-trips and for demonstration purposes
 - **Code Consistency**: Both implementations share identical business logic
 
 **Trade-offs**:
@@ -82,25 +82,11 @@ We chose `bc_` because this cartridge provides **reusable business logic** that 
 - ✅ No network latency for PWA-Kit calculations
 - ✅ SFRA storefronts can use server-side calculations
 
-### 2. Client-Side Calculation for PWA-Kit
+### 2. Mock Transit Data with ZIP Ranges
 
-**Decision**: Calculate delivery dates on the client side in PWA-Kit rather than calling an API.
+**Decision**: Use ZIP code ranges to determine transit days rather than actual carrier APIs as per challenge request
 
-**Rationale**:
-- **Performance**: Instant calculation without network round-trip (~0ms vs 200-500ms)
-- **Offline Support**: Could work offline if needed
-- **Reduced Server Load**: No additional API calls to SFCC
-
-**Trade-offs**:
-- ❌ Logic must be duplicated on client
-- ❌ Time zone handling in JavaScript can be tricky
-- ✅ Better user experience with instant feedback
-
-### 3. Mock Transit Data with ZIP Ranges
-
-**Decision**: Use ZIP code ranges to determine transit days rather than actual carrier APIs.
-
-**Rationale**:
+**Main Comments**:
 - **Simplicity**: Easy to implement and understand
 - **Demonstration**: Shows the concept without requiring carrier integrations
 - **Predictable**: Consistent results for testing
@@ -110,26 +96,21 @@ We chose `bc_` because this cartridge provides **reusable business logic** that 
 - Store transit data in a database or external service
 - Consider caching transit data for performance
 
-### 4. 2 PM EST Cutoff
+### 3. 2 PM EST Cutoff
 
-**Decision**: Use 2 PM EST as the order cutoff time.
+**Decision**: Use 2 PM EST as the order cutoff time as per challenge request
 
-**Rationale**:
-- **Industry Standard**: Common cutoff time in e-commerce
-- **Warehouse Operations**: Allows time for order processing before end of day
-- **Configurable**: Could be made configurable via Site Preferences
-
-### 5. Dynamic Holiday Calculation
+### 4. Dynamic Holiday Calculation
 
 **Decision**: Dynamically calculate US federal holidays for any year using date rules.
 
-**Rationale**:
+**Main Comments**:
 - **No Maintenance**: No need to manually update holiday lists each year
 - **Accuracy**: Correctly handles floating holidays (e.g., 3rd Monday of January for MLK Day)
 - **Weekend Observance**: Automatically handles Saturday→Friday and Sunday→Monday shifts
 
 **Implementation**:
-- Fixed holidays (Jan 1, Jul 4, Nov 11, Dec 25) use observance rules
+- Fixed holidays (Jan 1, Jul 4, Nov 11, Dec 25) use observance rules (more related to Weekend Holidays, where if a holiday falls on a weekend, the observance is often moved to the nearest weekeday).
 - Floating holidays use Nth weekday calculation (e.g., 4th Thursday of November)
 - Results are cached per year for performance
 
@@ -142,7 +123,7 @@ We chose `bc_` because this cartridge provides **reusable business logic** that 
 
 ### Current Implementation
 - Handles individual product page calculations
-- No caching needed (calculations are deterministic)
+- No caching needed (calculations are deterministic because they follow a mathematical logic as per the challenge requirements)
 - No database queries required
 
 ### Scaling to Production
