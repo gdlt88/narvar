@@ -20,6 +20,7 @@ const fallback = <Skeleton height="75vh" width="100%" />
 // Use loadable to split code into smaller js chunks
 const Home = loadable(() => import('./pages/home'), {fallback})
 const MyNewRoute = loadable(() => import('./pages/my-new-route'))
+const ProductDetail = loadable(() => import('./pages/product-detail'), {fallback})
 
 const routes = [
     {
@@ -30,6 +31,10 @@ const routes = [
     {
         path: '/my-new-route',
         component: MyNewRoute
+    },
+    {
+        path: '/product/:productId',
+        component: ProductDetail
     },
     ..._routes
 ]
