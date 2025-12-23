@@ -196,7 +196,8 @@ const ProductView = forwardRef(
         // Auto-calculate delivery date if ZIP was loaded from localStorage
         useEffect(() => {
             if (zipCode.length === 5 && !estimatedDelivery && !isCalculatingDelivery) {
-                const result = calculateDeliveryDate(zipCode)
+                // Use 'standard' (Ground) shipping as default for PDP estimate
+                const result = calculateDeliveryDate(zipCode, 'standard')
                 setEstimatedDelivery(result.formattedDateFull)
             }
         }, []) // Only run on mount
@@ -869,10 +870,12 @@ const ProductView = forwardRef(
                                                         onClick={() => {
                                                             setIsCalculatingDelivery(true)
                                                             // Calculate delivery date using promise-delivery utility
-                                                            // (mirrors int_promise_delivery cartridge logic)
+                                                            // Use 'standard' (Ground) shipping as default for PDP estimate
                                                             setTimeout(() => {
-                                                                const result =
-                                                                    calculateDeliveryDate(zipCode)
+                                                                const result = calculateDeliveryDate(
+                                                                    zipCode,
+                                                                    'standard'
+                                                                )
                                                                 setEstimatedDelivery(
                                                                     result.formattedDateFull
                                                                 )
@@ -887,18 +890,30 @@ const ProductView = forwardRef(
                                                     </Button>
                                                 </HStack>
                                                 {estimatedDelivery && (
-                                                    <Text
-                                                        color="green.600"
-                                                        fontWeight={600}
-                                                        fontSize="md"
-                                                    >
-                                                        📦{' '}
-                                                        <FormattedMessage
-                                                            defaultMessage="Get it by {date}"
-                                                            id="product_view.label.get_it_by"
-                                                            values={{date: estimatedDelivery}}
-                                                        />
-                                                    </Text>
+                                                    <Box>
+                                                        <Text
+                                                            color="green.600"
+                                                            fontWeight={600}
+                                                            fontSize="md"
+                                                        >
+                                                            📦{' '}
+                                                            <FormattedMessage
+                                                                defaultMessage="Get it by {date}"
+                                                                id="product_view.label.get_it_by"
+                                                                values={{date: estimatedDelivery}}
+                                                            />
+                                                        </Text>
+                                                        <Text
+                                                            color="gray.500"
+                                                            fontSize="xs"
+                                                            mt={0.5}
+                                                        >
+                                                            <FormattedMessage
+                                                                defaultMessage="with Ground shipping"
+                                                                id="product_view.label.with_ground_shipping"
+                                                            />
+                                                        </Text>
+                                                    </Box>
                                                 )}
                                             </Box>
                                         )}
