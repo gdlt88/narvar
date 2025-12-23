@@ -176,9 +176,30 @@ const ProductView = forwardRef(
         } = useAddToCartModalContext()
         const theme = useTheme()
         const [showOptionsMessage, toggleShowOptionsMessage] = useState(false)
-        const [zipCode, setZipCode] = useState('')
+        // Load ZIP code from localStorage on mount for return visits
+        const [zipCode, setZipCode] = useState(() => {
+            if (typeof window !== 'undefined') {
+                return localStorage.getItem('promiseDeliveryZipCode') || ''
+            }
+            return ''
+        })
         const [estimatedDelivery, setEstimatedDelivery] = useState(null)
         const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(false)
+
+        // Persist ZIP code to localStorage when it changes (5-digit only)
+        useEffect(() => {
+            if (typeof window !== 'undefined' && zipCode.length === 5) {
+                localStorage.setItem('promiseDeliveryZipCode', zipCode)
+            }
+        }, [zipCode])
+
+        // Auto-calculate delivery date if ZIP was loaded from localStorage
+        useEffect(() => {
+            if (zipCode.length === 5 && !estimatedDelivery && !isCalculatingDelivery) {
+                const result = calculateDeliveryDate(zipCode)
+                setEstimatedDelivery(result.formattedDateFull)
+            }
+        }, []) // Only run on mount
         const {
             showLoading,
             showInventoryMessage,
