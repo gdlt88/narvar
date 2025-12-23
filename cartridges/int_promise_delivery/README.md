@@ -9,6 +9,20 @@ This cartridge calculates estimated delivery dates based on:
 - **Transit Days**: Based on destination ZIP code range from origin (NYC - 10001)
 - **Business Days**: Excludes weekends and US federal holidays
 
+## Folder Structure
+
+```
+int_promise_delivery/
+├── cartridge/
+│   └── int_promise_delivery.properties   # Cartridge properties
+├── controllers/
+│   └── PromiseDelivery.js                # SFRA controller endpoints
+├── helpers/
+│   └── promiseDeliveryHelper.js          # Business logic helper
+├── README.md                             # This file
+└── DESIGN.md                             # Architecture & design decisions
+```
+
 ## Installation
 
 ### SFRA Installation
@@ -152,20 +166,6 @@ const estimates = getDeliveryEstimatesForAllMethods('90210');
    - Thanksgiving
    - Christmas
 
-## File Structure
-
-```
-int_promise_delivery/
-├── cartridge/
-│   ├── int_promise_delivery.properties
-│   ├── controllers/
-│   │   └── PromiseDelivery.js
-│   └── scripts/
-│       └── helpers/
-│           └── promiseDeliveryHelper.js
-└── README.md
-```
-
 ## Testing
 
 Navigate to any product page and:
@@ -184,4 +184,3 @@ Test with different ZIP codes to verify transit time calculations:
 ## License
 
 BSD-3-Clause
-

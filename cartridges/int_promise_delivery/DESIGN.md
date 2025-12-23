@@ -37,6 +37,21 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+## Folder Structure
+
+```
+cartridges/
+└── int_promise_delivery/           # Main cartridge folder
+    ├── cartridge/                  # SFCC required folder
+    │   └── int_promise_delivery.properties
+    ├── controllers/                # SFRA controllers
+    │   └── PromiseDelivery.js
+    ├── helpers/                    # Business logic helpers
+    │   └── promiseDeliveryHelper.js
+    ├── README.md                   # Usage documentation
+    └── DESIGN.md                   # This file
+```
+
 ## Design Decisions
 
 ### 1. Dual Implementation (Cartridge + PWA-Kit Utility)
@@ -220,33 +235,6 @@ GET /PromiseDelivery-GetEstimate?zipCode=90210&shippingMethodId=standard
 - Chakra UI components
 - No external date libraries (uses native `Date`)
 
-## File Structure
-
-```
-narvar/
-├── cartridges/
-│   └── int_promise_delivery/
-│       ├── cartridge/
-│       │   ├── controllers/
-│       │   │   └── PromiseDelivery.js
-│       │   ├── scripts/
-│       │   │   └── helpers/
-│       │   │       └── promiseDeliveryHelper.js
-│       │   └── int_promise_delivery.properties
-│       ├── README.md
-│       └── DESIGN.md
-└── overrides/
-    └── app/
-        ├── components/
-        │   └── product-view/
-        │       └── index.jsx (ZIP input UI)
-        ├── pages/
-        │   └── product-detail/
-        │       └── index.jsx (PDP override)
-        └── utils/
-            └── promise-delivery.js (Client-side logic)
-```
-
 ## Conclusion
 
 This implementation provides a foundation for delivery date estimation that can be extended for production use. The modular architecture allows for:
@@ -257,4 +245,3 @@ This implementation provides a foundation for delivery date estimation that can 
 4. International shipping support
 
 The key design principle is **separation of concerns** - business logic is isolated in reusable modules that can be consumed by different presentation layers (SFRA, PWA-Kit, mobile apps).
-
