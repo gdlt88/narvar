@@ -158,27 +158,55 @@ const estimates = getDeliveryEstimatesForAllMethods('90210');
 
 2. **Business Days**: Monday - Friday, excluding US federal holidays
 
-3. **Holidays Excluded** (2024-2025):
-   - New Year's Day
-   - MLK Day
-   - Presidents Day
-   - Memorial Day
-   - Independence Day
-   - Labor Day
-   - Columbus Day
-   - Veterans Day
-   - Thanksgiving
-   - Christmas
+3. **Dynamic Holiday Calculation**: Holidays are calculated automatically for any year using these rules:
+   - **New Year's Day** - January 1 (observed if weekend)
+   - **MLK Day** - 3rd Monday of January
+   - **Presidents Day** - 3rd Monday of February
+   - **Memorial Day** - Last Monday of May
+   - **Independence Day** - July 4 (observed if weekend)
+   - **Labor Day** - 1st Monday of September
+   - **Columbus Day** - 2nd Monday of October
+   - **Veterans Day** - November 11 (observed if weekend)
+   - **Thanksgiving** - 4th Thursday of November
+   - **Christmas** - December 25 (observed if weekend)
+
+   *Weekend observance: Saturday holidays observed on Friday, Sunday holidays observed on Monday*
+
+## Features
+
+### Product Detail Page (PDP)
+- ZIP code input for delivery date estimation
+- Automatic calculation on "Check" button click
+- ZIP code persisted in localStorage for return visits
+- Delivery date auto-calculated when ZIP is loaded from storage
+
+### Checkout (Shipping Step)
+- Delivery dates displayed per shipping method (Ground, Express, Overnight)
+- Dates calculated based on shipping address ZIP code
+- Selected delivery date stored in localStorage for order reference
+
+### ZIP Code Persistence
+- ZIP codes entered on PDP are saved to `localStorage`
+- On return visits, the saved ZIP is loaded and delivery date is auto-calculated
+- Key: `promiseDeliveryZipCode`
 
 ## Testing
 
-Navigate to any product page and:
-1. Ensure "Ship to Address" is selected
-2. Enter a 5-digit US ZIP code
-3. Click "Check"
-4. Verify the estimated delivery date displays correctly
+### Product Detail Page
+1. Navigate to any product page
+2. Ensure "Ship to Address" is selected
+3. Enter a 5-digit US ZIP code
+4. Click "Check"
+5. Verify the estimated delivery date displays correctly
+6. Refresh the page - ZIP should be remembered and date recalculated
 
-Test with different ZIP codes to verify transit time calculations:
+### Checkout Page
+1. Add items to cart and proceed to checkout
+2. Enter a shipping address
+3. On the "Shipping & Gift Options" step, verify each shipping method shows a delivery date
+4. Different shipping methods should show different dates based on transit time
+
+### Transit Time Test Cases
 - `10001` (NYC) - 1 day transit
 - `30301` (Atlanta) - 2 days transit
 - `60601` (Chicago) - 3 days transit

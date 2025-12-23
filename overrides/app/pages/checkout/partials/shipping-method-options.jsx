@@ -87,11 +87,9 @@ const ShippingMethodOptions = ({shipment, basketId, currency, control}) => {
     // Calculate delivery dates for each shipping method
     const deliveryDates = useMemo(() => {
         if (!destinationZip) {
-            console.log('[ShippingMethodOptions] No destinationZip, returning empty')
             return {}
         }
 
-        console.log('[ShippingMethodOptions] Calculating dates for ZIP:', destinationZip)
         const dates = {}
         const methods = ['standard', 'express', 'overnight']
 
@@ -99,14 +97,11 @@ const ShippingMethodOptions = ({shipment, basketId, currency, control}) => {
             try {
                 const result = calculateDeliveryDate(destinationZip, methodId)
                 dates[methodId] = result.formattedDate
-                console.log(`[ShippingMethodOptions] ${methodId}: ${result.formattedDate}`, result)
             } catch (e) {
-                console.error(`[ShippingMethodOptions] Error for ${methodId}:`, e)
                 dates[methodId] = null
             }
         })
 
-        console.log('[ShippingMethodOptions] Final dates:', dates)
         return dates
     }, [destinationZip])
 
@@ -153,14 +148,6 @@ const ShippingMethodOptions = ({shipment, basketId, currency, control}) => {
                                                     opt.name
                                                 )
                                                 const deliveryDate = deliveryDates[promiseMethodId]
-
-                                                // Debug: log the mapping
-                                                console.log('[ShippingMethodOptions] Mapping:', {
-                                                    optId: opt.id,
-                                                    optName: opt.name,
-                                                    promiseMethodId,
-                                                    deliveryDate
-                                                })
 
                                                 return (
                                                     <Radio value={opt.id} key={opt.id}>

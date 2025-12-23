@@ -30,8 +30,8 @@
 │  │ │ veryDate()      │  │ Days()          │  │ ()            │ │    │
 │  │ └─────────────────┘  └─────────────────┘  └───────────────┘ │    │
 │  │ ┌─────────────────┐  ┌─────────────────┐  ┌───────────────┐ │    │
-│  │ │ getShipDate()   │  │ addBusinessDays │  │ HOLIDAYS[]    │ │    │
-│  │ │                 │  │ ()              │  │               │ │    │
+│  │ │ getShipDate()   │  │ addBusinessDays │  │ getHolidays-  │ │    │
+│  │ │                 │  │ ()              │  │ ForYear()     │ │    │
 │  │ └─────────────────┘  └─────────────────┘  └───────────────┘ │    │
 │  └─────────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────┘
@@ -119,18 +119,24 @@ We chose `bc_` because this cartridge provides **reusable business logic** that 
 - **Warehouse Operations**: Allows time for order processing before end of day
 - **Configurable**: Could be made configurable via Site Preferences
 
-### 5. Static Holiday List
+### 5. Dynamic Holiday Calculation
 
-**Decision**: Hardcode US federal holidays for 2024-2025.
+**Decision**: Dynamically calculate US federal holidays for any year using date rules.
 
 **Rationale**:
-- **Simplicity**: Easy to implement without external dependencies
-- **Predictability**: Holidays are known in advance
+- **No Maintenance**: No need to manually update holiday lists each year
+- **Accuracy**: Correctly handles floating holidays (e.g., 3rd Monday of January for MLK Day)
+- **Weekend Observance**: Automatically handles Saturday→Friday and Sunday→Monday shifts
+
+**Implementation**:
+- Fixed holidays (Jan 1, Jul 4, Nov 11, Dec 25) use observance rules
+- Floating holidays use Nth weekday calculation (e.g., 4th Thursday of November)
+- Results are cached per year for performance
 
 **Production Considerations**:
-- Create a custom object or site preference for holidays
 - Support international holidays based on shipping destination
-- Auto-update holiday lists annually
+- Allow custom holidays via Site Preferences or custom objects
+- Consider regional/state holidays if needed
 
 ## Scalability Considerations
 
@@ -228,20 +234,25 @@ GET /PromiseDelivery-GetEstimate?zipCode=90210&shippingMethodId=standard
 - Test around 2 PM EST cutoff
 - Test on holidays and weekends
 
+## Implemented Features
+
+1. ✅ **Checkout Integration**: Delivery dates displayed per shipping method on checkout page
+2. ✅ **ZIP Code Persistence**: ZIP codes saved in localStorage for return visits
+3. ✅ **Dynamic Holidays**: Holidays calculated automatically for any year
+4. ✅ **Shipping Method Mapping**: SFCC shipping method IDs mapped to transit calculations
+
 ## Future Enhancements
 
-1. **Checkout Integration**: Show delivery dates per shipping method
-2. **Order Confirmation**: Store selected delivery date on order
-3. **Email Templates**: Include promised date in confirmation emails
-4. **Carrier Tracking**: Link actual carrier tracking to promise
-5. **Analytics**: Track promise accuracy vs actual delivery
-6. **A/B Testing**: Test different display formats
+1. **Order Custom Attribute**: Store selected delivery date in order `c_customerSelectedDeliveryDate`
+2. **Email Templates**: Include promised date in confirmation emails
+3. **Carrier Tracking**: Link actual carrier tracking to promise
+4. **Analytics**: Track promise accuracy vs actual delivery
+5. **A/B Testing**: Test different display formats
 
 ## Dependencies
 
 ### SFRA
-- `dw/util/Calendar` - Date handling
-- `dw/system/Site` - Site configuration
+- `dw/util/Calendar` - Date handling and holiday calculation
 - `server` module - Controller framework
 
 ### PWA-Kit
