@@ -1,0 +1,54 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run PWA-Kit utility tests
+        run: npm run test:pwa:utils
+
+      - name: Discover and test cartridges
+        run: |
+          echo "Discovering cartridges with tests..."
+          for dir in test/unit/*/; do
+            cartridge=$(basename "$dir")
+            if [ "$cartridge" != "pwa-kit" ]; then
+              echo "Running tests for cartridge: $cartridge"
+              npm run test:cartridge -- "$cartridge"
+            fi
+          done
+
+      - name: Run all unit tests with coverage
+        run: npm run test:unit:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-node-${{ matrix.node-version }}
+          path: coverage/
+          retention-days: 7
+
