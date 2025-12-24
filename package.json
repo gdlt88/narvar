@@ -28,6 +28,7 @@
     "test:unit:coverage": "nyc --reporter=html --reporter=text mocha --recursive 'test/unit/**/*.test.js'",
     "test:cartridge": "node scripts/test-cartridge.js",
     "test:pwa:utils": "mocha --recursive 'test/unit/pwa-kit/**/*.test.js'",
+    "upload:cartridge": "node scripts/upload-cartridge.js",
     "build": "npm run build-translations && pwa-kit-dev build",
     "start": "cross-env NODE_ICU_DATA=node_modules/full-icu pwa-kit-dev start",
     "format": "pwa-kit-dev format \"**/*.{js,jsx}\"",
