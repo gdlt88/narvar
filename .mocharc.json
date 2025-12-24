@@ -1,0 +1,8 @@
+{
+  "recursive": true,
+  "timeout": 5000,
+  "reporter": "spec",
+  "exit": true,
+  "extension": ["test.js"]
+}
+

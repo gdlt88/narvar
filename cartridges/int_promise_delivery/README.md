@@ -193,7 +193,53 @@ const estimates = getDeliveryEstimatesForAllMethods('90210');
 
 ## Testing
 
-### Product Detail Page
+### Unit Tests
+
+Unit tests are located in the centralized `test/` folder at the project root.
+
+```bash
+# From project root, install dependencies (if not already done)
+npm install
+
+# Run all unit tests
+npm run test:unit
+
+# Run tests for this cartridge
+npm run test:cartridge -- int_promise_delivery
+
+# Run with watch mode
+npm run test:cartridge -- int_promise_delivery --watch
+
+# Run with coverage report
+npm run test:cartridge -- int_promise_delivery --coverage
+
+# See available cartridges
+npm run test:cartridge -- --help
+```
+
+See `test/README.md` for detailed testing documentation.
+
+#### Test Coverage
+
+The unit tests cover:
+
+- **Helper Functions**
+  - `isValidZipCode()` - ZIP code validation
+  - `getTransitDays()` - Transit day calculation by ZIP range
+  - `getTransitDaysForShippingMethod()` - Shipping method modifiers
+  - `calculateDeliveryDate()` - Full delivery date calculation
+  - `getDeliveryEstimatesForAllMethods()` - All shipping methods
+  - Configuration constants (cutoff time, origin ZIP)
+
+- **Controller Endpoints**
+  - `GetEstimate` - Single method estimate
+  - `GetAllEstimates` - All methods estimates
+  - Error handling for invalid inputs
+  - Response format validation
+
+### Manual Testing
+
+#### Product Detail Page
 1. Navigate to any product page
 2. Ensure "Ship to Address" is selected
 3. Enter a 5-digit US ZIP code
@@ -201,7 +247,7 @@ const estimates = getDeliveryEstimatesForAllMethods('90210');
 5. Verify the estimated delivery date displays correctly
 6. Refresh the page - ZIP should be remembered and date recalculated
 
-### Checkout Page
+#### Checkout Page
 1. Add items to cart and proceed to checkout
 2. Enter a shipping address
 3. On the "Shipping & Gift Options" step, verify each shipping method shows a delivery date
