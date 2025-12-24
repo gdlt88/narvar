@@ -22,7 +22,7 @@
 ┌─────────────────────────────────────▼───────────────────────────────┐
 │                       BUSINESS LOGIC LAYER                          │
 ├─────────────────────────────────────────────────────────────────────┤
-│  bc_promise_delivery Cartridge                                      │
+│  int_promise_delivery Cartridge                                     │
 │  ┌─────────────────────────────────────────────────────────────┐    │
 │  │ promiseDeliveryHelper.js                                     │    │
 │  │ ┌─────────────────┐  ┌─────────────────┐  ┌───────────────┐ │    │
@@ -41,9 +41,9 @@
 
 ```
 cartridges/
-└── bc_promise_delivery/            # Main cartridge folder
+└── int_promise_delivery/            # Main cartridge folder
     ├── cartridge/                  # SFCC required folder
-    │   └── bc_promise_delivery.properties
+    │   └── int_promise_delivery.properties
     ├── controllers/                # SFRA controllers
     │   └── PromiseDelivery.js
     ├── helpers/                    # Business logic helpers
@@ -59,12 +59,11 @@ The cartridge follows SFCC naming conventions:
 | Prefix | Purpose | Example |
 |--------|---------|---------|
 | `app_` | Application-specific custom functionality | `app_storefront_custom` |
-| `int_` | Third-party integrations | `int_paypal` |
+| `int_` | **Third-party integrations / Reusable modules** | `int_promise_delivery` |
 | `plugin_` | Optional feature plugins | `plugin_wishlists` |
 | `bm_` | Business Manager extensions | `bm_custom_reports` |
-| `bc_` | **Business Components** (reusable modules) | `bc_promise_delivery` |
 
-We chose `bc_` because this cartridge provides **reusable business logic** that can be shared across multiple storefronts.
+We chose `int_` because this cartridge provides **integration-style reusable business logic** that can be shared across multiple storefronts.
 
 ## Design Decisions
 
@@ -221,6 +220,7 @@ GET /PromiseDelivery-GetEstimate?zipCode=90210&shippingMethodId=standard
 2. ✅ **ZIP Code Persistence**: ZIP codes saved in localStorage for return visits
 3. ✅ **Dynamic Holidays**: Holidays calculated automatically for any year
 4. ✅ **Shipping Method Mapping**: SFCC shipping method IDs mapped to transit calculations
+5. ✅ **Ground Shipping Label**: PDP shows "with Ground shipping" for clarity
 
 ## Future Enhancements
 
@@ -251,4 +251,5 @@ This implementation provides a foundation for delivery date estimation that can 
 4. International shipping support
 
 The key design principle is **separation of concerns** - business logic is isolated in reusable modules that can be consumed by different presentation layers (SFRA, PWA-Kit, mobile apps).
+
 

@@ -1,6 +1,6 @@
-# bc_promise_delivery - Promise Delivery Date Cartridge
+# int_promise_delivery - Promise Delivery Date Cartridge
 
-A Salesforce Commerce Cloud (SFCC) business component cartridge that provides delivery date estimation functionality for storefronts.
+A Salesforce Commerce Cloud (SFCC) integration cartridge that provides delivery date estimation functionality for storefronts.
 
 ## Overview
 
@@ -11,14 +11,14 @@ This cartridge calculates estimated delivery dates based on:
 
 ## Naming Convention
 
-The `bc_` prefix indicates this is a **Business Component** cartridge - a reusable module designed to be shared across multiple storefronts and projects.
+The `int_` prefix indicates this is an **Integration** cartridge - a module that integrates with external systems or provides reusable functionality that can be shared across multiple storefronts and projects.
 
 ## Folder Structure
 
 ```
-bc_promise_delivery/
+int_promise_delivery/
 ├── cartridge/
-│   └── bc_promise_delivery.properties    # Cartridge properties
+│   └── int_promise_delivery.properties    # Cartridge properties
 ├── controllers/
 │   └── PromiseDelivery.js                # SFRA controller endpoints
 ├── helpers/
@@ -31,10 +31,10 @@ bc_promise_delivery/
 
 ### SFRA Installation
 
-1. Copy the `bc_promise_delivery` folder to your `cartridges` directory
-2. Add `bc_promise_delivery` to your cartridge path in Business Manager:
+1. Copy the `int_promise_delivery` folder to your `cartridges` directory
+2. Add `int_promise_delivery` to your cartridge path in Business Manager:
    - Go to **Administration > Sites > Manage Sites > [Your Site] > Settings**
-   - Add `bc_promise_delivery` to the cartridge path (before `app_storefront_base`)
+   - Add `int_promise_delivery` to the cartridge path (before `app_storefront_base`)
 
 ### PWA-Kit Installation
 
@@ -179,6 +179,7 @@ const estimates = getDeliveryEstimatesForAllMethods('90210');
 - Automatic calculation on "Check" button click
 - ZIP code persisted in localStorage for return visits
 - Delivery date auto-calculated when ZIP is loaded from storage
+- Shows "with Ground shipping" label for clarity
 
 ### Checkout (Shipping Step)
 - Delivery dates displayed per shipping method (Ground, Express, Overnight)
@@ -216,4 +217,5 @@ const estimates = getDeliveryEstimatesForAllMethods('90210');
 ## License
 
 BSD-3-Clause
+
 
