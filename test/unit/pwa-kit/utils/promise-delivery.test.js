@@ -1,15 +1,13 @@
-'use strict';
-
 /**
  * Unit Tests for PWA-Kit Promise Delivery Utility
  * 
  * These tests verify the client-side delivery date calculation logic.
  */
 
-var assert = require('chai').assert;
+import { assert } from 'chai';
 
 // Import the PWA-Kit utility directly (no mocking needed as it uses pure JS Date)
-var promiseDelivery = require('../../../../overrides/app/utils/promise-delivery');
+import * as promiseDelivery from '../../../../overrides/app/utils/promise-delivery';
 
 describe('PWA-Kit Promise Delivery Utility', function() {
     

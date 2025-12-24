@@ -11,6 +11,7 @@
     "overridesDir": "overrides"
   },
   "devDependencies": {
+    "@babel/register": "^7.23.0",
     "@salesforce/retail-react-app": "8.3.0",
     "chai": "^4.3.7",
     "mocha": "^10.2.0",
