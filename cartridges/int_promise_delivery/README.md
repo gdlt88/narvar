@@ -237,6 +237,21 @@ The unit tests cover:
   - Error handling for invalid inputs
   - Response format validation
 
+### Cartridge Deployment
+
+Below are the commands that you can use to upload a cartridge to SFCC
+
+```bash
+# Upload a specific cartridge
+npm run upload:cartridge -- int_promise_delivery
+
+# Upload with watch mode (auto-upload on file changes)
+npm run upload:cartridge -- int_promise_delivery --watch
+
+# List available cartridges
+npm run upload:cartridge -- --help
+```
+
 ### Manual Testing
 
 #### Product Detail Page
