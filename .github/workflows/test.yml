@@ -10,6 +10,7 @@ jobs:
   test:
     name: Run Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     strategy:
       matrix:
@@ -26,7 +27,11 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
+        
+      - name: Run postinstall scripts
+        run: npm run compile-translations && npm run compile-translations:pseudo
+        continue-on-error: true
 
       - name: Run PWA-Kit utility tests
         run: npm run test:pwa:utils
