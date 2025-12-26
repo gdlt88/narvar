@@ -252,7 +252,156 @@ npm run upload:cartridge -- int_promise_delivery --watch
 npm run upload:cartridge -- --help
 ```
 
-### Manual Testing
+### SFCC Sandbox Testing Steps
+
+After uploading the cartridge to your SFCC sandbox, follow these steps to verify the installation:
+
+#### Step 1: Configure Cartridge Path
+
+1. Log into **Business Manager**
+2. Navigate to **Administration > Sites > Manage Sites > [Your Site] > Settings**
+3. In the **Cartridges** field, add `int_promise_delivery` before `app_storefront_base`:
+   ```
+   int_promise_delivery:app_storefront_base
+   ```
+4. Click **Apply**
+
+#### Step 2: Verify Cartridge Upload
+
+1. Navigate to **Administration > Site Development > Code Deployment**
+2. Find your active code version
+3. Click on it and verify `int_promise_delivery` folder exists with:
+   - `cartridge/int_promise_delivery.properties`
+   - `controllers/PromiseDelivery.js`
+   - `helpers/promiseDeliveryHelper.js`
+
+#### Step 3: Test API Endpoints (Business Manager)
+
+Use the **Script Debugger** or **Insomnia/Postman** to test the controller endpoints:
+
+**Single Estimate Endpoint:**
+```
+GET https://[your-sandbox].dx.commercecloud.salesforce.com/on/demandware.store/Sites-[SiteID]-Site/default/PromiseDelivery-GetEstimate?zipCode=90210&shippingMethodId=standard
+```
+
+Expected Response:
+```json
+{
+  "success": true,
+  "zipCode": "90210",
+  "shippingMethodId": "standard",
+  "transitDays": 5,
+  "deliveryDate": "January 20th"
+}
+```
+
+**All Estimates Endpoint:**
+```
+GET https://[your-sandbox].dx.commercecloud.salesforce.com/on/demandware.store/Sites-[SiteID]-Site/default/PromiseDelivery-GetAllEstimates?zipCode=90210
+```
+
+Expected Response:
+```json
+{
+  "success": true,
+  "zipCode": "90210",
+  "shippingMethods": [
+    { "shippingMethodId": "standard", "transitDays": 5, ... },
+    { "shippingMethodId": "express", "transitDays": 2, ... },
+    { "shippingMethodId": "overnight", "transitDays": 1, ... }
+  ]
+}
+```
+
+#### Step 4: Test Error Handling
+
+**Invalid ZIP Code:**
+```
+GET .../PromiseDelivery-GetEstimate?zipCode=abc
+```
+
+Expected Response:
+```json
+{
+  "success": false,
+  "error": "Invalid ZIP code format",
+  "errorCode": "INVALID_ZIP"
+}
+```
+
+**Missing ZIP Code:**
+```
+GET .../PromiseDelivery-GetEstimate
+```
+
+Expected Response:
+```json
+{
+  "success": false,
+  "error": "Invalid ZIP code format",
+  "errorCode": "INVALID_ZIP"
+}
+```
+
+#### Step 5: Test Transit Day Calculation
+
+Use these ZIP codes to verify transit days are calculated correctly:
+
+| ZIP Code | Expected Transit Days | Description |
+|----------|----------------------|-------------|
+| `10001`  | 1 day | NYC (origin) |
+| `19999`  | 1 day | Edge of Zone 1 |
+| `20000`  | 2 days | Start of Zone 2 |
+| `30301`  | 2 days | Atlanta |
+| `39999`  | 2 days | Edge of Zone 2 |
+| `40000`  | 3 days | Start of Zone 3 |
+| `60601`  | 4 days | Chicago |
+| `75201`  | 4 days | Dallas |
+| `80000`  | 5 days | Start of Zone 5 |
+| `90210`  | 5 days | Los Angeles |
+
+#### Step 6: Test Shipping Method Modifiers
+
+For ZIP code `90210` (5 days base transit):
+
+| Shipping Method | Expected Transit | API Parameter |
+|-----------------|------------------|---------------|
+| Standard | 5 days | `shippingMethodId=standard` |
+| Express | 2 days | `shippingMethodId=express` |
+| Overnight | 1 day | `shippingMethodId=overnight` |
+
+#### Step 7: Test Business Day Logic
+
+Test the 2 PM EST cutoff:
+
+1. **Before 2 PM EST**: 
+   - Place order on Monday at 1 PM EST
+   - Ship date should be Monday (same day)
+   
+2. **After 2 PM EST**:
+   - Place order on Monday at 3 PM EST
+   - Ship date should be Tuesday (next business day)
+
+3. **Weekend Orders**:
+   - Place order on Saturday
+   - Ship date should be Monday
+
+4. **Holiday Orders**:
+   - Test near holidays (Christmas, New Year's, etc.)
+   - Holidays should be skipped in delivery calculation
+
+#### Step 8: Test with SFRA Pipeline Debugger
+
+1. Enable **Pipeline Debugger** in Business Manager
+2. Set a breakpoint in `PromiseDelivery.js` controller
+3. Call one of the endpoints
+4. Step through the code to verify:
+   - `promiseDeliveryHelper` is loaded correctly
+   - Transit days are calculated properly
+   - Business days are excluded
+   - Response is formatted correctly
+
+### PWA-Kit Manual Testing
 
 #### Product Detail Page
 1. Navigate to any product page
@@ -267,11 +416,12 @@ npm run upload:cartridge -- --help
 2. Enter a shipping address
 3. On the "Shipping & Gift Options" step, verify each shipping method shows a delivery date
 4. Different shipping methods should show different dates based on transit time
+5. For nearby ZIP codes (e.g., Florida), verify redundant shipping methods are filtered out
 
 ### Transit Time Test Cases
 - `10001` (NYC) - 1 day transit
 - `30301` (Atlanta) - 2 days transit
-- `60601` (Chicago) - 3 days transit
+- `60601` (Chicago) - 4 days transit
 - `75201` (Dallas) - 4 days transit
 - `90210` (LA) - 5 days transit
 

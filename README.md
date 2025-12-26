@@ -225,7 +225,7 @@ npm run upload:cartridge -- int_promise_delivery
 Some things to consider when testing/reviewing this repo:
 
 ### Avoid showing shipping methods with same delivery date
-- When a customer enters a ZIP code (like Florida ones close to the origin), the component now:
+- When a customer enters a ZIP code (like Florida ones close to the origin), the component performs the following:
    - Calculates delivery dates for all shipping methods
    - Groups methods by delivery date
    - Keeps only the cheapest option for each unique delivery date
@@ -240,5 +240,8 @@ Some things to consider when testing/reviewing this repo:
 ### Delivery Date is hidden when Pickup Up in Store is selected
 - To show that the Delivery Date calculation in the product detail page is hidden when Pickup In Store option is selected, we enabled for the product [25553417M](http://localhost:3000/product/25553417M) this option by hardcoding the flag to show it because the PWA-Kit demo is missing some BOPIS(Buy Online, Pickup In-Store) configuration
 ![pickup-in-store](documentation/images/pickup-in-store.png)
+
+### Cartridge testing
+- To test the cartridge, follow the **SFCC Sandbox Testing Steps** in the [README.md](cartridges/README.md) of the cartridge
 
 </details>
