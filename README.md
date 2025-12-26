@@ -10,6 +10,7 @@ This Github repo contains the code to solve the Challenge sent by Narvar on 2025
 
 <details>
 <summary>Challenge Information</summary>
+
 ## Take-Home: Promise Delivery Date Engine
 
 Build a delivery date promise feature for SFCC (SFRA + PWA-Kit) that shows customers estimated delivery dates on PDP and Checkout.
@@ -141,6 +142,7 @@ Use ZIP ranges to determine transit days from origin `10001`:
 
 <details>
 <summary>Structure of the Repo, Quick Start, and NPM Scripts</summary>
+
 ## Structure of the Repo
 
 ```
@@ -222,7 +224,8 @@ npm run upload:cartridge -- int_promise_delivery
 
 <details>
 <summary>Considerations</summary>
-Some things to consider when testing/reviewing this repo:
+
+## Some things to consider when testing/reviewing this repo:
 
 ### Avoid showing shipping methods with same delivery date
 - When a customer enters a ZIP code (like Florida ones close to the origin), the component performs the following:
