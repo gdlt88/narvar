@@ -105,18 +105,63 @@ const ShippingMethodOptions = ({shipment, basketId, currency, control}) => {
         return dates
     }, [destinationZip])
 
-    if (!shipment.shippingAddress) {
-        return null
-    }
-
     const fieldName = `shippingMethodId_${shipment.shipmentId}`
 
     // Filter out pickup shipping methods only if store locator/BOPIS is enabled
-    const applicableShippingMethods = storeLocatorEnabled
-        ? shippingMethods?.applicableShippingMethods?.filter(
-              (method) => !method.c_storePickupEnabled
-          ) || []
-        : shippingMethods?.applicableShippingMethods || []
+    const baseShippingMethods = useMemo(() => {
+        const methods = shippingMethods?.applicableShippingMethods || []
+        if (storeLocatorEnabled) {
+            return methods.filter((method) => !method.c_storePickupEnabled)
+        }
+        return methods
+    }, [shippingMethods?.applicableShippingMethods, storeLocatorEnabled])
+
+    // Filter out shipping methods that have the same delivery date as a cheaper option
+    // This removes redundant options (e.g., Express showing same date as Ground for nearby ZIPs)
+    const applicableShippingMethods = useMemo(() => {
+        if (!destinationZip || Object.keys(deliveryDates).length === 0) {
+            return baseShippingMethods
+        }
+
+        // Create a map of delivery dates to the cheapest method with that date
+        const dateToMethodMap = new Map()
+
+        // Sort methods by price (cheapest first) to prioritize cheaper options
+        const sortedMethods = [...baseShippingMethods].sort((a, b) => a.price - b.price)
+
+        sortedMethods.forEach((method) => {
+            const promiseMethodId = getPromiseMethodId(method.id, method.name)
+            const deliveryDate = deliveryDates[promiseMethodId]
+
+            if (deliveryDate) {
+                // Only keep this method if we haven't seen this delivery date yet
+                // (which means it's the cheapest option for this date)
+                if (!dateToMethodMap.has(deliveryDate)) {
+                    dateToMethodMap.set(deliveryDate, method.id)
+                }
+            }
+        })
+
+        // Filter to only include methods that are the cheapest for their delivery date
+        // Also include methods without a delivery date (fallback)
+        return baseShippingMethods.filter((method) => {
+            const promiseMethodId = getPromiseMethodId(method.id, method.name)
+            const deliveryDate = deliveryDates[promiseMethodId]
+
+            // If no delivery date, include the method
+            if (!deliveryDate) {
+                return true
+            }
+
+            // Include only if this method is the cheapest for its delivery date
+            return dateToMethodMap.get(deliveryDate) === method.id
+        })
+    }, [baseShippingMethods, deliveryDates, destinationZip])
+
+    // Early return after all hooks
+    if (!shipment.shippingAddress) {
+        return null
+    }
 
     return (
         <VStack spacing={6} align="stretch">
