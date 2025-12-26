@@ -1,5 +1,12 @@
 # Promise Delivery Date Narvar Challenge
-This Github repo contains the code to solve the Challenge sent by Narvar on 2025-12-23. If you want to see the challenge information, click on the **Challenge Information** section below.
+This Github repo contains the code to solve the Challenge sent by Narvar on 2025-12-23. I've divided this README.md file into collapsible sections so it is easier to use and read. Below a table of contents with a brief description of each section
+
+- **Challenge information:** contains the description and requirements of the challenge
+- **Structure of the Repo, Quick Start, and NPM Scripts:** 
+   - Contains the structure of the repo with a brief description
+   - A quick start section with some npm commands to install the packages, run tests and upload the cartridge to SFCC
+   - Other npm commands  to run pwa-kit unit tests, cartridge tests, etc
+- **Considerations:** contains some things to consider when testing and reviewing this repo
 
 <details>
 <summary>Challenge Information</summary>
@@ -131,6 +138,9 @@ Use ZIP ranges to determine transit days from origin `10001`:
 - Document any assumptions
 </details>
 
+
+<details>
+<summary>Structure of the Repo, Quick Start, and NPM Scripts</summary>
 ## Structure of the Repo
 
 ```
@@ -198,7 +208,7 @@ npm run test:unit
 npm run upload:cartridge -- int_promise_delivery
 ```
 
-## NPM Scripts
+## NPM Commands
 
 | Script | Description |
 |--------|-------------|
@@ -208,4 +218,27 @@ npm run upload:cartridge -- int_promise_delivery
 | `npm run test:pwa:utils` | Run PWA-Kit utility tests |
 | `npm run upload:cartridge -- <name>` | Upload a cartridge to SFCC sandbox |
 | `npm run upload:cartridge -- <name> --watch` | Upload with watch mode |
+</details>
 
+<details>
+<summary>Considerations</summary>
+Some things to consider when testing/reviewing this repo:
+
+### Avoid showing shipping methods with same delivery date
+- When a customer enters a ZIP code (like Florida ones close to the origin), the component now:
+   - Calculates delivery dates for all shipping methods
+   - Groups methods by delivery date
+   - Keeps only the cheapest option for each unique delivery date
+   - Removes more expensive methods that would arrive on the same day
+![shipping-methods-same-delivery-date](documentation/images/shipping-methods-same-delivery-date.png)
+
+
+### Zip Code caching
+- As per the Challenge requirements, we have implemented zip code caching in the Local Storage of the browser with the variable promiseDeliveryZipCode. See screenshot below for more reference
+![zip-code-caching](documentation/images/zip-code-caching.png)
+
+### Delivery Date is hidden when Pickup Up in Store is selected
+- To show that the Delivery Date calculation in the product detail page is hidden when Pickup In Store option is selected, we enabled for the product [25553417M](http://localhost:3000/product/25553417M) this option by hardcoding the flag to show it because the PWA-Kit demo is missing some BOPIS(Buy Online, Pickup In-Store) configuration
+![pickup-in-store](documentation/images/pickup-in-store.png)
+
+</details>
