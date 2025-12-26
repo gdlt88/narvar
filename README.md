@@ -1,56 +1,133 @@
-# PWA Kit Generated App
+# Narvar Challenge
+The purpose of this repo is to show solve the Narvar Challenge sent by Samia Atthari on 2025-12-23.
+Below is the description of the challenge
 
-Welcome to the PWA Kit!
+<details>
+<summary>Challenge Information</summary>
+## Take-Home: Promise Delivery Date Engine
 
-## Getting Started
+Build a delivery date promise feature for SFCC (SFRA + PWA-Kit) that shows customers estimated delivery dates on PDP and Checkout.
 
-### Requirements
+---
 
--   Node 18 or later
--   npm 9 or later
+### The Problem
 
-### Run the Project Locally
-
-```bash
-npm start
-```
-
-This will open a browser and your storefront will be running on http://localhost:3000
-
-### Deploy to Managed Runtime
+Customers want to know **when** they'll receive their order before buying. Build a widget that displays:
 
 ```
-npm run push -- -m "Message to help you recognize this bundle"
+"Get it by January 15th"
 ```
 
-**Note**: This command will push to the MRT project that matches the name field in `package.json`. To push to a different project, include the `-s` argument.
+---
 
-**Important**: Access to the [Runtime Admin](https://runtime.commercecloud.com/) application is required to deploy bundles. To learn more, read our guide to [Push and Deploy Bundles](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/pushing-and-deploying-bundles.html).
+### UI Placement
 
-## Customizing the application
+#### PDP (Product Detail Page)
 
-This version of the application uses [Template Extensibility](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/template-extensibility.html) to empower you to more easily customize base templates. Please refer to our documentation for more information.
+```
+┌─────────────────────────────────────────────┐
+│  Product Name                               │
+│  $49.99                                     │
+│                                             │
+│  ┌─────────────────────────────────────┐    │
+│  │ 📍 Enter ZIP: [90210] [Check]       │    │
+│  │                                     │    │
+│  │ 📦 Get it by January 15th           │    │
+│  └─────────────────────────────────────┘    │
+│                                             │
+│  [Add to Cart]                              │
+└─────────────────────────────────────────────┘
+```
 
-## 🌍 Localization
+- ZIP input field (US 5-digit only)
+- Shows promise date after ZIP entry
+- Persist ZIP in session for return visits
 
-See the [Localization README.md](./packages/template-retail-react-app/translations/README.md) for important setup instructions for localization.
+#### Checkout (Shipping Step)
 
-## 📖 Documentation
+```
+┌─────────────────────────────────────────────┐
+│  Select Shipping Method                     │
+│                                             │
+│  ○ Standard Shipping - $5.99                │
+│    Get it by January 20th                   │
+│                                             │
+│  ○ Express Shipping - $12.99                │
+│    Get it by January 17th                   │
+│                                             │
+│  ○ Overnight - $24.99                       │
+│    Get it by January 15th                   │
+└─────────────────────────────────────────────┘
+```
 
-The full documentation for PWA Kit and Managed Runtime is hosted on the [Salesforce Developers](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/overview) portal.
+- Promise date shown per shipping method
+- Updates when shipping address changes
+- Selected date stored in order custom attribute: `customerSelectedDeliveryDate`
 
-## Further documentation
+---
 
-For more information on working with the PWA Kit, refer to:
+### Calculation Logic
 
--   [Get Started](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/getting-started.html)
--   [Skills for Success](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/skills-for-success.html)
--   [Set Up API Access](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/setting-up-api-access.html)
--   [Configuration Options](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/configuration-options.html)
--   [Proxy Requests](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/proxying-requests.html)
--   [Push and Deploy Bundles](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/pushing-and-deploying-bundles.html)
--   [The Retail React App](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/retail-react-app.html)
--   [Rendering](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/rendering.html)
--   [Routing](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/routing.html)
--   [Phased Headless Rollouts](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/phased-headless-rollouts.html)
--   [Launch Your Storefront](https://developer.salesforce.com/docs/commerce/pwa-kit-managed-runtime/guide/launching-your-storefront.html)
+```
+Promise Date = Ship Date + Transit Days (business days only)
+```
+
+| Factor | Rule |
+|--------|------|
+| **Ship Date** | Today if before 2 PM EST cutoff, else next business day |
+| **Transit Days** | Based on origin→destination ZIP (use mock data) |
+| **Business Days** | Exclude weekends and holidays |
+
+#### Example
+
+```
+Order time:     Monday 1:30 PM EST (before cutoff)
+Origin ZIP:     10001 (NYC)
+Destination:    90210 (LA)
+Transit time:   5 business days
+
+Ship: Monday → Deliver: Next Monday
+Display: "Get it by January 20th"
+```
+
+---
+
+### Mock Transit Data
+
+Use ZIP ranges to determine transit days from origin `10001`:
+
+| Destination ZIP | Transit Days |
+|-----------------|--------------|
+| 00000-19999 | 1 |
+| 20000-39999 | 2 |
+| 40000-59999 | 3 |
+| 60000-79999 | 4 |
+| 80000-99999 | 5 |
+
+---
+
+### Deliverables
+
+1. **SFRA cartridge** (`int_promise_delivery`)
+2. **PWA-Kit extension**
+3. **DESIGN.md** - Architecture, decisions, trade-offs, scale considerations
+4. **README.md** - Setup instructions
+
+---
+
+### Submission & Evaluation
+
+- Send a GitHub link with your code
+- Be prepared for a 1-hour deep dive meeting to walk through your implementation
+
+**We'll evaluate:** Working functionality, code quality, SFCC best practices, architecture, scalability, and documentation.
+
+---
+
+### Notes
+
+- **Code must be working** — we will run it
+- Use AI tools freely — be prepared to discuss your AI development process
+- Focus on depth over breadth
+- Document any assumptions
+</details>
