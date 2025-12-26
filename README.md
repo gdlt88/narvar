@@ -1,6 +1,5 @@
 # Narvar Challenge
-The purpose of this repo is to show solve the Narvar Challenge sent by Samia Atthari on 2025-12-23.
-Below is the description of the challenge
+This Github repo contains the code to solve the Challenge sent by Narvar on 2025-12-23. If you want to see the challenge information, click on the **Challenge Information** section below.
 
 <details>
 <summary>Challenge Information</summary>
@@ -131,3 +130,84 @@ Use ZIP ranges to determine transit days from origin `10001`:
 - Focus on depth over breadth
 - Document any assumptions
 </details>
+
+## Structure of the Repo
+
+```
+narvar/
+├── .github/
+│   └── workflows/
+│       └── test.yml                    # GitHub Actions for unit tests
+├── .mocharc.json                       # Mocha test configuration
+├── cartridges/
+│   └── int_promise_delivery/           # SFRA Promise Delivery Cartridge
+│       ├── cartridge/
+│       │   └── int_promise_delivery.properties
+│       ├── controllers/
+│       │   └── PromiseDelivery.js      # API endpoints for delivery dates
+│       ├── helpers/
+│       │   └── promiseDeliveryHelper.js # Core calculation logic (server-side)
+│       ├── DESIGN.md                   # Architecture & design decisions
+│       └── README.md                   # Cartridge documentation
+├── overrides/
+│   └── app/
+│       ├── components/
+│       │   └── product-view/
+│       │       └── index.jsx           # PDP with ZIP input & delivery date
+│       ├── pages/
+│       │   ├── checkout/
+│       │   │   ├── index.jsx           # Checkout page override
+│       │   │   └── partials/
+│       │   │       ├── shipping-method-options.jsx  # Delivery dates per method
+│       │   │       └── shipping-methods.jsx
+│       │   └── product-detail/
+│       │       └── index.jsx           # Product detail page override
+│       ├── utils/
+│       │   └── promise-delivery.js     # Core calculation logic (client-side)
+│       └── routes.jsx                  # Route overrides
+├── scripts/
+│   ├── test-cartridge.js               # Dynamic cartridge test runner
+│   └── upload-cartridge.js             # Dynamic cartridge uploader (sgmf-scripts)
+├── test/
+│   └── unit/
+│       ├── int_promise_delivery/       # Cartridge unit tests
+│       │   ├── controllers/
+│       │   │   └── PromiseDelivery.test.js
+│       │   └── helpers/
+│       │       └── promiseDeliveryHelper.test.js
+│       └── pwa-kit/
+│           └── utils/
+│               └── promise-delivery.test.js  # PWA-Kit utility tests
+├── challenges/
+│   └── README.md                       # Original challenge requirements
+├── dw.json                             # SFCC sandbox credentials
+└── package.json                        # Dependencies & npm scripts
+```
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Start the PWA-Kit dev server
+npm start
+
+# Run unit tests
+npm run test:unit
+
+# Upload a cartridge to SFCC
+npm run upload:cartridge -- int_promise_delivery
+```
+
+## NPM Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm start` | Start PWA-Kit development server |
+| `npm run test:unit` | Run all unit tests |
+| `npm run test:cartridge -- <name>` | Run tests for a specific cartridge |
+| `npm run test:pwa:utils` | Run PWA-Kit utility tests |
+| `npm run upload:cartridge -- <name>` | Upload a cartridge to SFCC sandbox |
+| `npm run upload:cartridge -- <name> --watch` | Upload with watch mode |
+
