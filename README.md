@@ -1,4 +1,4 @@
-# Narvar Challenge
+# Promise Delivery Date Narvar Challenge
 This Github repo contains the code to solve the Challenge sent by Narvar on 2025-12-23. If you want to see the challenge information, click on the **Challenge Information** section below.
 
 <details>
@@ -178,8 +178,6 @@ narvar/
 │       └── pwa-kit/
 │           └── utils/
 │               └── promise-delivery.test.js  # PWA-Kit utility tests
-├── challenges/
-│   └── README.md                       # Original challenge requirements
 ├── dw.json                             # SFCC sandbox credentials
 └── package.json                        # Dependencies & npm scripts
 ```
